@@ -153,15 +153,38 @@ int main(int argc, char *argv[]) {
                         message += "\n";
                     }
                 } else if (lParameter) {
+                    setpwent();
                     struct passwd *user;
+
                     while ((user = getpwent()) != nullptr) {
-                        message += user->pw_name;
-                        message += "\n";
+                        if ((!login.empty() && (strncmp(login.c_str(), user->pw_name, strlen(login.c_str())) == 0)) || login.empty()) {
+                            message += user->pw_name;
+                            message += "\n";
+                        }
                     }
+
+                    endpwent();
                 }
 
-                send(comm_socket, message.c_str(), strlen(message.c_str()) + 1, 0);
-                send(comm_socket, "::CLOSE::", 50, 0);
+                std::string ending;
+
+                long int messageSize = message.size();
+                long int actual = 0;
+
+                while (actual < messageSize) {
+                    memcpy(buff, message.c_str() + actual, 1023);
+                    strcat(buff, "\0");
+                    send(comm_socket, buff, 1024, 0);
+
+                    actual += 1024;
+
+                    if (actual >= messageSize) {
+                        ending = "::CLOSE::";
+                    } else {
+                        ending = "";
+                    }
+                    send(comm_socket, ending.c_str(), 50, 0);
+                }
             }
         } else {
             printf(".");

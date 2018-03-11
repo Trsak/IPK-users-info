@@ -11,7 +11,7 @@
 #define BUFSIZE 1024
 
 int main(int argc, char *argv[]) {
-    int client_socket, port_number = 0, bytestx, bytesrx;
+    int client_socket, port_number = 0, bytestx, bytesrx, bytesrx2;
     const char *server_hostname = nullptr;
     char *login;
     struct hostent *server;
@@ -69,12 +69,17 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    if (optind >= argc) {
+    if (optind >= argc && !lArg) {
         fprintf(stderr, "ERROR: Missing login parameter!\n");
         exit(EXIT_FAILURE);
     }
 
-    login = argv[optind++];
+    if (lArg && optind >= argc) {
+        login = const_cast<char *>("");
+    }
+    else {
+        login = argv[optind++];
+    }
 
     if (optind < argc) {
         fprintf(stderr, "ERROR: Unknown argument!\n");
@@ -119,6 +124,7 @@ int main(int argc, char *argv[]) {
     }
 
     char message[BUFSIZE];
+    char state[BUFSIZE];
     strcpy(message, messageToSend.c_str());
 
     /* odeslani zpravy na server */
@@ -129,14 +135,15 @@ int main(int argc, char *argv[]) {
     /* prijeti odpovedi a jeji vypsani */
     while (true) {
         bytesrx = static_cast<int>(recv(client_socket, message, BUFSIZE, 0));
-        if (bytesrx < 0)
+        bytesrx2 = static_cast<int>(recv(client_socket, state, 50, 0));
+        if (bytesrx < 0 || bytesrx2 < 0)
             perror("ERROR in recvfrom");
 
-        if (strcmp(message, "::CLOSE::") == 0) {
+        printf("%s", message);
+
+        if (strcmp(state, "::CLOSE::") == 0) {
             break;
         }
-
-        printf("%s", message);
     }
 
     close(client_socket);
