@@ -1,10 +1,31 @@
-all: ipk-server ipk-client
+CC = g++
+CFLAGS = -c -Wall -DDEBUG -g
+LDFLAGS = -g
 
-ipk-server: server.c
-	@gcc -o ipk-server server.c
+COMMON_SOURCES =
+CLIENT_SOURCES = client.cpp
+SERVER_SOURCES = server.cpp
 
-ipk-client: client.c
-	@gcc -o ipk-client client.c
+COMMON_OBJECTS = $(COMMON_SOURCES:.cpp=.o)
+CLIENT_OBJECTS = $(CLIENT_SOURCES:.cpp=.o)
+SERVER_OBJECTS = $(SERVER_SOURCES:.cpp=.o)
 
-remove:
-	@rm -f ipk-client ipk-server
+CLIENT_EXECUTABLE = ipk-client
+SERVER_EXECUTABLE = ipk-server
+
+.PHONY: all client server
+
+all: client server
+
+client: $(CLIENT_EXECUTABLE)
+
+server: $(SERVER_EXECUTABLE)
+
+$(CLIENT_EXECUTABLE): $(COMMON_OBJECTS) $(CLIENT_OBJECTS)
+	$(CC) $(LDFLAGS) $^ -o $@
+
+$(SERVER_EXECUTABLE): $(COMMON_OBJECTS) $(SERVER_OBJECTS)
+	$(CC) $(LDFLAGS) $^ -o $@
+
+.cpp.o:
+	$(CC) $(CFLAGS) $< -o $@
