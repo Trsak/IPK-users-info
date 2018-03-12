@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    //Create "welcome" message
+    //Create entry data message
     std::string messageToSend;
     messageToSend = login;
 
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 
     strcpy(message, messageToSend.c_str());
 
-    //Send "welcome" message to server
+    //Send entry data message to server
     bytestx = static_cast<int>(send(client_socket, message, strlen(message) + 1, 0));
     if (bytestx < 0) {
         perror("ERROR: sendto");
