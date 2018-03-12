@@ -5,14 +5,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <pwd.h>
 
 int main(int argc, char *argv[]) {
     int welcome_socket;
-    struct sockaddr_in6 sa{};
-    struct sockaddr_in6 sa_client{};
-    char str[INET6_ADDRSTRLEN];
+    struct sockaddr_in sa{};
+    struct sockaddr_in sa_client{};
+    char str[INET_ADDRSTRLEN];
     int port_number = 0;
     int c;
     opterr = 0;
@@ -20,7 +21,7 @@ int main(int argc, char *argv[]) {
     //PWD
     struct passwd pwd{};
     struct passwd *result;
-    char *buf;
+    char buf[16384];
     size_t bufsize;
     int s;
 
@@ -57,15 +58,14 @@ int main(int argc, char *argv[]) {
     }
 
     socklen_t sa_client_len = sizeof(sa_client);
-    if ((welcome_socket = socket(PF_INET6, SOCK_STREAM, 0)) < 0) {
+    if ((welcome_socket = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
         fprintf(stderr, "ERROR: socket!\n");
         exit(EXIT_FAILURE);
     }
 
     memset(&sa, 0, sizeof(sa));
-    sa.sin6_family = AF_INET6;
-    sa.sin6_addr = in6addr_any;
-    sa.sin6_port = htons(static_cast<uint16_t>(port_number));
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(static_cast<uint16_t>(port_number));
 
 
     if (bind(welcome_socket, (struct sockaddr *) &sa, sizeof(sa))) {
@@ -81,10 +81,10 @@ int main(int argc, char *argv[]) {
     while (true) {
         int comm_socket = accept(welcome_socket, (struct sockaddr *) &sa_client, &sa_client_len);
         if (comm_socket > 0) {
-            if (inet_ntop(AF_INET6, &sa_client.sin6_addr, str, sizeof(str))) {
+            if (inet_ntop(AF_INET, &sa_client.sin_addr, str, sizeof(str))) {
                 printf("INFO: New connection:\n");
                 printf("INFO: Client address is %s\n", str);
-                printf("INFO: Client port is %d\n", ntohs(sa_client.sin6_port));
+                printf("INFO: Client port is %d\n", ntohs(sa_client.sin_port));
             }
 
             char buff[1024];
@@ -114,15 +114,7 @@ int main(int argc, char *argv[]) {
                     recievedPart = strtok(nullptr, "::");
                 }
 
-                bufsize = static_cast<size_t>(sysconf(_SC_GETPW_R_SIZE_MAX));
-                if (bufsize < 0)          /* Value was indeterminate */
-                    bufsize = 16384;        /* Should be more than enough */
-
-                buf = (char *) malloc(bufsize);
-                if (buf == nullptr) {
-                    perror("malloc");
-                    exit(EXIT_FAILURE);
-                }
+                bufsize = 16384;
 
                 std::string message;
 
@@ -157,7 +149,8 @@ int main(int argc, char *argv[]) {
                     struct passwd *user;
 
                     while ((user = getpwent()) != nullptr) {
-                        if ((!login.empty() && (strncmp(login.c_str(), user->pw_name, strlen(login.c_str())) == 0)) || login.empty()) {
+                        if ((!login.empty() && (strncmp(login.c_str(), user->pw_name, strlen(login.c_str())) == 0)) ||
+                            login.empty()) {
                             message += user->pw_name;
                             message += "\n";
                         }
@@ -168,7 +161,7 @@ int main(int argc, char *argv[]) {
 
                 std::string ending;
 
-                long int messageSize = message.size();
+                long int messageSize = strlen(message.c_str());
                 long int actual = 0;
 
                 while (actual < messageSize) {

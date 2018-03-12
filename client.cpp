@@ -2,9 +2,9 @@
 #include <cstdlib>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <cctype>
 #include <cstring>
 #include <string>
 

@@ -1,19 +1,17 @@
-CC = g++
-CFLAGS = -c -Wall -DDEBUG -g
+CC = g++ -static-libstdc++
+CFLAGS = -c -Wall
 LDFLAGS = -g
 
-COMMON_SOURCES =
 CLIENT_SOURCES = client.cpp
 SERVER_SOURCES = server.cpp
 
-COMMON_OBJECTS = $(COMMON_SOURCES:.cpp=.o)
 CLIENT_OBJECTS = $(CLIENT_SOURCES:.cpp=.o)
 SERVER_OBJECTS = $(SERVER_SOURCES:.cpp=.o)
 
 CLIENT_EXECUTABLE = ipk-client
 SERVER_EXECUTABLE = ipk-server
 
-.PHONY: all client server
+.PHONY: all client server clean remove
 
 all: client server
 
@@ -21,11 +19,17 @@ client: $(CLIENT_EXECUTABLE)
 
 server: $(SERVER_EXECUTABLE)
 
-$(CLIENT_EXECUTABLE): $(COMMON_OBJECTS) $(CLIENT_OBJECTS)
-	$(CC) $(LDFLAGS) $^ -o $@
+$(CLIENT_EXECUTABLE): $(CLIENT_OBJECTS)
+	$(CC) $(LDFLAGS) $(CLIENT_OBJECTS) -o $@
 
-$(SERVER_EXECUTABLE): $(COMMON_OBJECTS) $(SERVER_OBJECTS)
-	$(CC) $(LDFLAGS) $^ -o $@
+$(SERVER_EXECUTABLE): $(SERVER_OBJECTS)
+	$(CC) $(LDFLAGS) $(SERVER_OBJECTS) -o $@
 
 .cpp.o:
 	$(CC) $(CFLAGS) $< -o $@
+
+clean:
+	rm -f *.o
+
+remove: clean
+	rm -f $(CLIENT_EXECUTABLE) $(SERVER_EXECUTABLE)
