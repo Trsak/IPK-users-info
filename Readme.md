@@ -7,16 +7,10 @@ Jedná se o aplikaci typu klient-server pro získání informací o uživatelýc
  - Pomocí příkazu **make clean** lze odstranit objektové soubory a
    příkazem **make remove** navíc i oba spustitelné soubory.
 # Server
-
     ./ipk-server -p port
-
 -   _port_ (číslo) číslo portu, na kterém server naslouchá na připojení od klientů.
 # Klient
-Klienta lze spustit s následujícími parametry:
-
-
      ./ipk-client -h host -p port [-n|-f|-l] login
-
 -   _host_ (IP adresa nebo fully-qualified DNS name) identifikace serveru jakožto koncového bodu komunikace klienta;
 -   _port_ (číslo) cílové číslo portu;
 -   _-n_ značí, že bude vráceno plné jméno uživatele včetně případných dalších informací pro uvedený login (User ID Info);
