@@ -1,6 +1,6 @@
 ## IPK - Klient-server pro získání informace o uživatelích
 # Informace
-Jedná se o aplikaci typu klient-server pro získání informací o uživatelých ze souboru /etc/passwd.
+Jedná se o aplikaci typu klient-server pro získání informací o uživatelích ze souboru /etc/passwd.
 # Překlad
  - Projekt lze přeložit příkazem **make**, který vytvoří dva spustitelné
    soubory (ipk-client pro klienta a ipk-server pro server).
