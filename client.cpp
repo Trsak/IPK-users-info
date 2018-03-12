@@ -1,3 +1,9 @@
+/**
+ * @project IPK-users-info
+ * @file client.cpp
+ * @author Petr Sopf (xsopfp00)
+ * @brief Client for getting data from /etc/passwd
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <sys/socket.h>
@@ -11,17 +17,18 @@
 #define BUFSIZE 1024
 
 int main(int argc, char *argv[]) {
+    //Connection variables
     int client_socket, port_number = 0, bytestx, bytesrx, bytesrx2;
     const char *server_hostname = nullptr;
-    char *login;
     struct hostent *server;
     struct sockaddr_in server_address{};
 
-    std::string messageToSend;
+    //Argument variables
+    char *login;
     bool portArg = false, nArg = false, fArg = false, lArg = false;
     int c;
-    opterr = 0;
 
+    //Parse arguments
     while ((c = getopt(argc, argv, "h:p:nfl")) != -1) {
         switch (c) {
             case 'h':
@@ -61,6 +68,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    //Check for required arguments
     if (server_hostname == nullptr) {
         fprintf(stderr, "ERROR: Missing host (-h) argument!\n");
         exit(EXIT_FAILURE);
@@ -69,41 +77,52 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    //Check if only one of f, n, l parameters were used
+    int argsN = nArg + fArg + lArg;
+    if (argsN != 1) {
+        fprintf(stderr, "ERROR: You can only use -f or -n or -l parameters!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    //If n or l parameters are used, we have to check for login argument
     if (optind >= argc && !lArg) {
         fprintf(stderr, "ERROR: Missing login parameter!\n");
         exit(EXIT_FAILURE);
     }
 
+    //Fill login variable with argument, if not set, then fill it with empty string.
     if (lArg && optind >= argc) {
         login = const_cast<char *>("");
-    }
-    else {
+    } else {
         login = argv[optind++];
     }
 
+    //Check for any unknown arguments
     if (optind < argc) {
         fprintf(stderr, "ERROR: Unknown argument!\n");
         exit(EXIT_FAILURE);
     }
 
-    /* 2. ziskani adresy serveru pomoci DNS */
+    //Get IP address and check if host exists
     if ((server = gethostbyname(server_hostname)) == nullptr) {
-        fprintf(stderr, "ERROR: no such host as %s\n", server_hostname);
+        fprintf(stderr, "ERROR: Unknown host: %s!\n", server_hostname);
         exit(EXIT_FAILURE);
     }
 
-    /* 3. nalezeni IP adresy serveru a inicializace struktury server_address */
+    //Find server IP address and initialize server_address
     bzero((char *) &server_address, sizeof(server_address));
     server_address.sin_family = AF_INET;
     bcopy(server->h_addr, (char *) &server_address.sin_addr.s_addr, static_cast<size_t>(server->h_length));
     server_address.sin_port = htons(static_cast<uint16_t>(port_number));
 
-    /* Vytvoreni soketu */
+    //Create socket
     if ((client_socket = socket(AF_INET, SOCK_STREAM, 0)) <= 0) {
         perror("ERROR: socket");
         exit(EXIT_FAILURE);
     }
 
+    //Create "welcome" message
+    std::string messageToSend;
     messageToSend = login;
 
     if (nArg) {
@@ -118,29 +137,50 @@ int main(int argc, char *argv[]) {
         messageToSend += "::l";
     }
 
+    //Connect to server
     if (connect(client_socket, (const struct sockaddr *) &server_address, sizeof(server_address)) != 0) {
         perror("ERROR: connect");
         exit(EXIT_FAILURE);
     }
 
-    char message[BUFSIZE];
-    char state[BUFSIZE];
+    //Communication variables
+    char message[BUFSIZE]; //Buffer for server messages
+    char state[BUFSIZE]; //Buffer for server states
+    char errorMessage[] = "ERROR"; //Error string
+    char *errorCheck = nullptr; //String for error checking
+
+
     strcpy(message, messageToSend.c_str());
 
-    /* odeslani zpravy na server */
+    //Send "welcome" message to server
     bytestx = static_cast<int>(send(client_socket, message, strlen(message) + 1, 0));
-    if (bytestx < 0)
-        perror("ERROR in sendto");
+    if (bytestx < 0) {
+        perror("ERROR: sendto");
+        close(client_socket);
+        exit(EXIT_FAILURE);
+    }
 
-    /* prijeti odpovedi a jeji vypsani */
+    //Wait for server's answer and print message
     while (true) {
-        bytesrx = static_cast<int>(recv(client_socket, message, BUFSIZE, 0));
-        bytesrx2 = static_cast<int>(recv(client_socket, state, 50, 0));
-        if (bytesrx < 0 || bytesrx2 < 0)
-            perror("ERROR in recvfrom");
+        bytesrx = static_cast<int>(recv(client_socket, message, BUFSIZE, 0)); //Recieve message
+        bytesrx2 = static_cast<int>(recv(client_socket, state, 50, 0)); //Recieve server status
+        if (bytesrx < 0 || bytesrx2 < 0) {
+            perror("ERROR: recvfrom");
+            exit(EXIT_FAILURE);
+        }
 
+        //Check if message contains error
+        errorCheck = strstr(message, errorMessage);
+        if (errorCheck) {
+            fprintf(stderr, "%s", message);
+            close(client_socket);
+            exit(EXIT_FAILURE);
+        }
+
+        //Print server message
         printf("%s", message);
 
+        //Check if server wants to close connection
         if (strcmp(state, "::CLOSE::") == 0) {
             break;
         }

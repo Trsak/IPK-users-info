@@ -1,5 +1,5 @@
 CC = g++ -static-libstdc++
-CFLAGS = -c -Wall
+CFLAGS = -c -Wall -Wextra -Werror
 LDFLAGS = -g
 
 CLIENT_SOURCES = client.cpp
@@ -16,20 +16,24 @@ SERVER_EXECUTABLE = ipk-server
 all: client server
 
 client: $(CLIENT_EXECUTABLE)
+	@echo Created ipk-client executable.
 
 server: $(SERVER_EXECUTABLE)
+	@echo Created ipk-server executable.
 
 $(CLIENT_EXECUTABLE): $(CLIENT_OBJECTS)
-	$(CC) $(LDFLAGS) $(CLIENT_OBJECTS) -o $@
+	@$(CC) $(LDFLAGS) $(CLIENT_OBJECTS) -o $@
 
 $(SERVER_EXECUTABLE): $(SERVER_OBJECTS)
-	$(CC) $(LDFLAGS) $(SERVER_OBJECTS) -o $@
+	@$(CC) $(LDFLAGS) $(SERVER_OBJECTS) -o $@
 
 .cpp.o:
-	$(CC) $(CFLAGS) $< -o $@
+	@$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm -f *.o
+	@rm -f *.o
+	@echo Object files removed.
 
 remove: clean
-	rm -f $(CLIENT_EXECUTABLE) $(SERVER_EXECUTABLE)
+	@rm -f $(CLIENT_EXECUTABLE) $(SERVER_EXECUTABLE)
+	@echo Executables removed.

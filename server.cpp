@@ -8,6 +8,13 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <sys/wait.h>
+#include <signal.h>
+
+void SigCatcher(int n) {
+    (void) n;
+    wait3(nullptr, WNOHANG, nullptr);
+}
 
 int main(int argc, char *argv[]) {
     int welcome_socket;
@@ -65,6 +72,7 @@ int main(int argc, char *argv[]) {
 
     memset(&sa, 0, sizeof(sa));
     sa.sin_family = AF_INET;
+    sa.sin_addr.s_addr = INADDR_ANY;
     sa.sin_port = htons(static_cast<uint16_t>(port_number));
 
 
@@ -78,11 +86,25 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    signal(SIGCHLD, SigCatcher);
+
     while (true) {
         int comm_socket = accept(welcome_socket, (struct sockaddr *) &sa_client, &sa_client_len);
-        if (comm_socket > 0) {
+
+        if (comm_socket <= 0)
+            continue;
+
+        pid_t pid = fork();
+
+        if (pid < 0) {
+            perror("ERROR on fork");
+            close(comm_socket);
+            exit(EXIT_FAILURE);
+        } else if (pid == 0) {
+            int child_pid = getpid();
+
             if (inet_ntop(AF_INET, &sa_client.sin_addr, str, sizeof(str))) {
-                printf("INFO: New connection:\n");
+                printf("INFO: New connection (child %d):\n", child_pid);
                 printf("INFO: Client address is %s\n", str);
                 printf("INFO: Client port is %d\n", ntohs(sa_client.sin_port));
             }
@@ -149,7 +171,8 @@ int main(int argc, char *argv[]) {
                     struct passwd *user;
 
                     while ((user = getpwent()) != nullptr) {
-                        if ((!login.empty() && (strncmp(login.c_str(), user->pw_name, strlen(login.c_str())) == 0)) ||
+                        if ((!login.empty() &&
+                             (strncmp(login.c_str(), user->pw_name, strlen(login.c_str())) == 0)) ||
                             login.empty()) {
                             message += user->pw_name;
                             message += "\n";
@@ -179,11 +202,9 @@ int main(int argc, char *argv[]) {
                     send(comm_socket, ending.c_str(), 50, 0);
                 }
             }
-        } else {
-            printf(".");
         }
 
-        printf("Connection to %s closed\n", str);
         close(comm_socket);
     }
+
 }
