@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in sa{};
     struct sockaddr_in sa_client{};
     char str[INET_ADDRSTRLEN];
-    int port_number = 0;
+    int port_number = -1;
     int c;
 
     //PWD.h variables
@@ -46,6 +46,11 @@ int main(int argc, char *argv[]) {
     while ((c = getopt(argc, argv, "p:")) != -1) {
         switch (c) {
             case 'p':
+                if (port_number != -1) {
+                    fprintf(stderr, "ERROR: -p already used!\n");
+                    exit(EXIT_FAILURE);
+                }
+
                 char *ptr;
                 port_number = static_cast<int>(strtol(optarg, &ptr, 10));
                 if (strlen(ptr) != 0) {
@@ -223,7 +228,7 @@ int main(int argc, char *argv[]) {
                     strcat(buff, "\0");
                     send(comm_socket, buff, 1024, 0);
 
-                    actual += 1024;
+                    actual += 1023;
 
                     if (actual >= messageSize) { //If whole message was sent, we cant signal client to close connection
                         state = "::CLOSE::";

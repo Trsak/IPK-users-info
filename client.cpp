@@ -18,7 +18,7 @@
 
 int main(int argc, char *argv[]) {
     //Connection variables
-    int client_socket, port_number = 0, bytestx, bytesrx, bytesrx2;
+    int client_socket, port_number = -1, bytestx, bytesrx, bytesrx2;
     const char *server_hostname = nullptr;
     struct hostent *server;
     struct sockaddr_in server_address{};
@@ -32,9 +32,19 @@ int main(int argc, char *argv[]) {
     while ((c = getopt(argc, argv, "h:p:nfl")) != -1) {
         switch (c) {
             case 'h':
+                if (server_hostname != nullptr) {
+                    fprintf(stderr, "ERROR: -h already used!\n");
+                    exit(EXIT_FAILURE);
+                }
+
                 server_hostname = optarg;
                 break;
             case 'p':
+                if (port_number != -1) {
+                    fprintf(stderr, "ERROR: -h already used!\n");
+                    exit(EXIT_FAILURE);
+                }
+
                 char *ptr;
                 port_number = static_cast<int>(strtol(optarg, &ptr, 10));
                 if (strlen(ptr) != 0) {
@@ -44,12 +54,27 @@ int main(int argc, char *argv[]) {
                 portArg = true;
                 break;
             case 'n':
+                if (nArg) {
+                    fprintf(stderr, "ERROR: -n already used!\n");
+                    exit(EXIT_FAILURE);
+                }
+
                 nArg = true;
                 break;
             case 'f':
+                if (fArg) {
+                    fprintf(stderr, "ERROR: -l already used!\n");
+                    exit(EXIT_FAILURE);
+                }
+
                 fArg = true;
                 break;
             case 'l':
+                if (lArg) {
+                    fprintf(stderr, "ERROR: -f already used!\n");
+                    exit(EXIT_FAILURE);
+                }
+
                 lArg = true;
                 break;
             case '?':
